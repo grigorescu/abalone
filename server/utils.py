@@ -23,7 +23,7 @@ def get_direction(start_row, start_col, end_row, end_col):
     if start_row == end_row:
         # An east <-> west move
         distance = abs(start_col - end_col)
-        if start_col > end_col:
+        if start_col < end_col:
             direction = 2
         else:
             direction = 5
@@ -37,7 +37,7 @@ def get_direction(start_row, start_col, end_row, end_col):
     elif abs(start_col - end_col) == abs(start_row - end_row):
         # A north-east <-> south-west move
         distance = abs(start_col - end_col)
-        if start_col > end_col:
+        if start_col < end_col:
             direction = 1
         else:
             direction = 4
@@ -72,9 +72,8 @@ def calc_position_at_distance(start_row, start_col, direction, hops):
           NE = 1, E = 2, SE = 3
           SW = 4, W = 5, NW = 6
         """
-
     if not 0 < direction < 7:
-        return ValueError("Unknown direction")
+        raise ValueError("Unknown direction")
 
     r, c = start_row, start_col
 
@@ -86,9 +85,14 @@ def calc_position_at_distance(start_row, start_col, direction, hops):
         c -= hops
     # North directions decrease the row number
     if direction in (1, 6):
-        r -= hops
+        r += hops
     # South directions increase the row number
     if direction in (3, 4):
-        r += hops
+        r -= hops
+
+    if not 0 <= r <= 8:
+        raise IndexError("Row off the board")
+    if not 0 <= c <= 8:
+        raise IndexError("Column off the board")
 
     return r, c
