@@ -18,9 +18,13 @@ class GameState:
             [white, white, white, white, white, white],
             [white, white, white, white, white]
         ]
+        self.turn = black
+        self.black_marbles_removed = 0
+        self.white_marbles_removed = 0
 
-    def proc_move(self, move, marble):
-        """Process a move.
+    def proc_move(self, move, preview=False):
+        """Process a move. If preview == True, it won't actually store the move, just return the board state that would
+        result.
 
         Move notation:
            In-line move:
@@ -29,16 +33,39 @@ class GameState:
               Start positions of the two extremities of the row followed by the end position of the first one. e.g.
               I5-I7-H4
         """
+        black_count = self.black_marbles_removed
+        white_count = self.white_marbles_removed
+
+        if black_count >= 6:
+            raise ValueError("The game is over - white has won")
+        if white_count >= 6:
+            raise ValueError("The game is over - black has won")
 
         if move.count("-") == 1:
-            return self._proc_inline_move(move, marble)
+            result, marble_removed = self._proc_inline_move(move)
+            if marble_removed and self.turn == white:
+                black_count += 1
+            if marble_removed and self.turn == black:
+                white_count += 1
         elif move.count("-") == 2:
-            return self._proc_broadside_move(move, marble)
+            result = self._proc_broadside_move(move)
+        else:
+            raise ValueError("Unknown move notation")
 
-        return ValueError("Unknown move notation")
+        if preview:
+            return result, black_count, white_count
 
-    def _proc_inline_move(self, move, marble):
-        """Process an inline move, e.g. I5-H5"""
+        self.turn = utils.get_opposite_marble(self.turn)
+        self.black_marbles_removed = black_count
+        self.white_marbles_removed = white_count
+        self.board = result
+
+        return result
+
+    def _proc_inline_move(self, move):
+        """Process an inline move, e.g. I5-H5.
+
+        Returns a tuple of: the new board position, T if a black marble was removed, T if a white marble was removed"""
 
         #########
         # Check 1 - Are we moving a distance of 1?
@@ -50,6 +77,8 @@ class GameState:
         direction, distance = utils.get_direction(start_row, start_col, end_row, end_col)
         if distance != 1:
             raise ValueError("Invalid move")
+
+        marble = self.turn
 
         #########
         # Check 2 - Is there a matching marble in the starting position?
@@ -75,8 +104,10 @@ class GameState:
 
         if self._get_marble(start_row, start_col, direction, 1) == empty:
             # We're pushing one white into an empty space - Legal move
-            # TODO - move it!
-            pass
+            board = self._set_marble(start_row, start_col, empty)
+            r, c = utils.calc_position_at_distance(start_row, start_col, direction, 1)
+            board = self._set_marble(r, c, marble, board)
+            return board, False
         elif self._get_marble(start_row, start_col, direction, 1) == utils.get_opposite_marble(marble):
             # One white against one black. Can't do this, but is this a pac or just an invalid move?
             if self._get_marble(start_row, start_col, direction, 2) == empty:
@@ -89,14 +120,24 @@ class GameState:
             # Two white marbles in a row.
             if self._get_marble(start_row, start_col, direction, 2) == empty:
                 # We're pushing two whites into an empty space - Legal move
-                # TODO - move two marbles!
-                pass
+                board = self._set_marble(start_row, start_col, empty)
+                r, c = utils.calc_position_at_distance(start_row, start_col, direction, 2)
+                board = self._set_marble(r, c, marble, board)
+                return board, False
             elif self._get_marble(start_row, start_col, direction, 2) == utils.get_opposite_marble(marble):
                 # Two whites against one black. What's in the next space?
                 if self._get_marble(start_row, start_col, direction, 3, True) == empty:
                     # Two whites pushing one black into an empty space - Legal move
-                    # TODO - move three marbles!
-                    pass
+                    board = self._set_marble(start_row, start_col, empty)
+                    r, c = utils.calc_position_at_distance(start_row, start_col, direction, 2)
+                    board = self._set_marble(r, c, marble, board)
+                    try:
+                        r, c = utils.calc_position_at_distance(start_row, start_col, direction, 3)
+                        board = self._set_marble(r, c, utils.get_opposite_marble(marble), board)
+                    except IndexError:
+                        # We just pushed a black off the edge
+                        return board, True
+                    return board, False
                 elif self._get_marble(start_row, start_col, direction, 3) == utils.get_opposite_marble(marble):
                     # Two whites against two blacks. Can't do this, but is this a pac or just an invalid move?
                     if self._get_marble(start_row, start_col, direction, 4) == empty:
@@ -112,20 +153,38 @@ class GameState:
                 # Three white marbles in a row.
                 if self._get_marble(start_row, start_col, direction, 3) == empty:
                     # We're pushing three whites into an empty space - Legal move
-                    # TODO - move three marbles!
-                    pass
+                    board = self._set_marble(start_row, start_col, empty)
+                    r, c = utils.calc_position_at_distance(start_row, start_col, direction, 3)
+                    board = self._set_marble(r, c, marble, board)
+                    return board, False
                 elif self._get_marble(start_row, start_col, direction, 3) == utils.get_opposite_marble(marble):
                     # Three whites against one black. What's in the next space?
                     if self._get_marble(start_row, start_col, direction, 4, True) == empty:
                         # Three whites pushing one black into an empty space - Legal move
-                        # TODO - move four marbles!
-                        pass
+                        board = self._set_marble(start_row, start_col, empty)
+                        r, c = utils.calc_position_at_distance(start_row, start_col, direction, 3)
+                        board = self._set_marble(r, c, marble, board)
+                        try:
+                            r, c = utils.calc_position_at_distance(start_row, start_col, direction, 4)
+                            board = self._set_marble(r, c, utils.get_opposite_marble(marble), board)
+                        except IndexError:
+                            # We just pushed a black off the edge
+                            return board, True
+                        return board, False
                     elif self._get_marble(start_row, start_col, direction, 4) == utils.get_opposite_marble(marble):
                         # Three whites against two blacks. What's in the next space?
                         if self._get_marble(start_row, start_col, direction, 5, True) == empty:
                             # Three whites pushing two blacks into an empty space - Legal move
-                            # TODO - move five marbles!
-                            pass
+                            board = self._set_marble(start_row, start_col, empty)
+                            r, c = utils.calc_position_at_distance(start_row, start_col, direction, 3)
+                            board = self._set_marble(r, c, marble, board)
+                            try:
+                                r, c = utils.calc_position_at_distance(start_row, start_col, direction, 5)
+                                board = self._set_marble(r, c, utils.get_opposite_marble(marble), board)
+                            except IndexError:
+                                # We just pushed a black off the edge
+                                return board, True
+                            return board, False
                         elif self._get_marble(start_row, start_col, direction, 5) == utils.get_opposite_marble(marble):
                             # Three whites against three blacks. Can't do this, but is this a pac or just an invalid move?
                             if self._get_marble(start_row, start_col, direction, 6) == empty:
@@ -144,7 +203,7 @@ class GameState:
                     # Four whites
                     raise ValueError("Invalid move")
 
-    def _proc_broadside_move(self, move, marble):
+    def _proc_broadside_move(self, move):
         """Process an broadside move, e.g. I5-I7-H5"""
 
         line_start, line_end, end = move.split('-')
@@ -171,7 +230,9 @@ class GameState:
 
         if line_distance == 1:
             # This is the same as an inline push of 1 marble
-            return self._proc_inline_move(move[3:8], marble)
+            return self._proc_inline_move(move[3:8])
+
+        marble = self.turn
 
         #########
         # Check 2 - Is there a matching marble in the line start position?
@@ -238,7 +299,19 @@ class GameState:
             except IndexError:
                 raise ValueError("Invalid move")
 
-        # TODO move the marbles
+        board = self._set_marble(line_start_row, line_start_col, empty)
+        board = self._set_marble(end_row, end_col, marble, board)
+
+        board = self._set_marble(line_end_row, line_end_col, empty, board)
+        r, c = utils.calc_position_at_distance(line_end_row, line_end_col, move_direction, 1)
+        board = self._set_marble(r, c, marble, board)
+
+        if line_distance == 3:
+            board = self._set_marble(line_mid_row, line_mid_col, empty, board)
+            r, c = utils.calc_position_at_distance(line_mid_row, line_mid_col, move_direction, 1)
+            board = self._set_marble(r, c, marble, board)
+
+        return board
 
     def _get_marble(self, row, col, direction=0, hops=0, edge_is_empty=False):
         """For a given starting row & col (e.g. (1, 3)), a direction, and a number of "hops," return the marble in that
@@ -259,12 +332,15 @@ class GameState:
             return self.board[r][c]
         return self.board[r][c-(r-4)]
 
-    def _set_marble(self, row, col, marble):
+    def _set_marble(self, row, col, marble, board=None):
         """Set the marble at (row, col)."""
 
-        if row < 4:
-            self.board[row][col] = marble
-            return True
+        if not board:
+            board = list(self.board)
 
-        self.board[row][col-(row-4)] = marble
-        return True
+        if row < 4:
+            board[row][col] = marble
+            return board
+
+        board[row][col-(row-4)] = marble
+        return board
