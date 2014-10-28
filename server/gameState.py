@@ -74,13 +74,13 @@ class GameState:
         # For documentation, we'll assume our marble is white
 
         if self._get_marble(start_row, start_col, direction, 1) == empty:
-            # We're pushing one white into an empty space
+            # We're pushing one white into an empty space - Legal move
             # TODO - move it!
             pass
         elif self._get_marble(start_row, start_col, direction, 1) == utils.get_opposite_marble(marble):
-            # We're pushing one white into an empty space
+            # One white against one black. Can't do this, but is this a pac or just an invalid move?
             if self._get_marble(start_row, start_col, direction, 2) == empty:
-                # We're pushing one white against one black
+                # We're pushing one white against one black, followed by an empty space
                 raise ValueError("Pac")
             else:
                 # We're pushing one white against one black and some other stuff
@@ -88,19 +88,19 @@ class GameState:
         else:
             # Two white marbles in a row.
             if self._get_marble(start_row, start_col, direction, 2) == empty:
-                # We're pushing two whites into an empty space
+                # We're pushing two whites into an empty space - Legal move
                 # TODO - move two marbles!
                 pass
             elif self._get_marble(start_row, start_col, direction, 2) == utils.get_opposite_marble(marble):
-                # Two whites against one black
+                # Two whites against one black. What's in the next space?
                 if self._get_marble(start_row, start_col, direction, 3, True) == empty:
-                    # Two whites, one black into an empty space.
+                    # Two whites pushing one black into an empty space - Legal move
                     # TODO - move three marbles!
                     pass
                 elif self._get_marble(start_row, start_col, direction, 3) == utils.get_opposite_marble(marble):
-                    # Two whites, two blacks
+                    # Two whites against two blacks. Can't do this, but is this a pac or just an invalid move?
                     if self._get_marble(start_row, start_col, direction, 4) == empty:
-                        # We're pushing two whites against two blacks
+                        # We're pushing two whites against two blacks followed by an empty space
                         raise ValueError("Pac")
                     else:
                         # We're pushing two whites against two blacks and some other stuff
@@ -111,34 +111,34 @@ class GameState:
             else:
                 # Three white marbles in a row.
                 if self._get_marble(start_row, start_col, direction, 3) == empty:
-                    # We're pushing three whites into an empty space
+                    # We're pushing three whites into an empty space - Legal move
                     # TODO - move three marbles!
                     pass
                 elif self._get_marble(start_row, start_col, direction, 3) == utils.get_opposite_marble(marble):
-                    # Three whites against one black
+                    # Three whites against one black. What's in the next space?
                     if self._get_marble(start_row, start_col, direction, 4, True) == empty:
-                        # Three whites, one black into an empty space
+                        # Three whites pushing one black into an empty space - Legal move
                         # TODO - move four marbles!
                         pass
                     elif self._get_marble(start_row, start_col, direction, 4) == utils.get_opposite_marble(marble):
-                        # Three whites against two blacks
+                        # Three whites against two blacks. What's in the next space?
                         if self._get_marble(start_row, start_col, direction, 5, True) == empty:
-                            # Three whites, two blacks into an empty space
+                            # Three whites pushing two blacks into an empty space - Legal move
                             # TODO - move five marbles!
                             pass
                         elif self._get_marble(start_row, start_col, direction, 5) == utils.get_opposite_marble(marble):
-                            # Three whites, three blacks
+                            # Three whites against three blacks. Can't do this, but is this a pac or just an invalid move?
                             if self._get_marble(start_row, start_col, direction, 6) == empty:
-                                # Three whites, three blacks into an empty space
+                                # We're pushing three whites against three blacks followed by an empty space
                                 raise ValueError("Pac")
                             else:
                                 # We're pushing three whites against three blacks and some other stuff
                                 raise ValueError("Invalid move")
                         else:
-                            # Three whites, two blacks, and some other stuff
+                            # Three whites, two blacks, white
                             raise ValueError("Invalid move")
                     else:
-                        # Three whites, one black, and some other stuff
+                        # Three whites, one black, white
                         raise ValueError("Invalid move")
                 else:
                     # Four whites
